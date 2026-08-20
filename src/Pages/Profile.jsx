@@ -2,7 +2,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navbar from "../Components/Navbar";
 import "./Profile.css";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 const RANK_SYMBOLS = ["🥇", "🥈", "🥉"];
 

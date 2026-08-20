@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "./pacman.css";
 import Navbar from "../Components/Navbar";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import GameBoot from "../Components/GameBoot";
 import "../Components/GameBoot.css";
 

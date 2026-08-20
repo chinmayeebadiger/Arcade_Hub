@@ -10,7 +10,8 @@ export default function Shooter() {
 
   const [gameState, setGameState] = useState("idle");
   const [playerX, setPlayerX] = useState(280);
-  const [, forceRender] = useState(0);
+  const [bullets, setBullets] = useState([]);
+  const [enemies, setEnemies] = useState([]);
   const [booting, setBooting] = useState(true);
 
   const keys = useRef({ left: false, right: false, shoot: false });
@@ -124,11 +125,14 @@ export default function Shooter() {
 
       // Game over
       if (enemiesRef.current.some((e) => e.y > gameHeight - 40)) {
+        setBullets([...bulletsRef.current]);
+        setEnemies([...enemiesRef.current]);
         setGameState("gameover");
         return;
       }
 
-      forceRender((n) => n + 1);
+      setBullets([...bulletsRef.current]);
+      setEnemies([...enemiesRef.current]);
     }, 16);
 
     return () => clearInterval(interval);
@@ -139,6 +143,8 @@ export default function Shooter() {
     playerXRef.current = 280;
     bulletsRef.current = [];
     enemiesRef.current = [];
+    setBullets([]);
+    setEnemies([]);
     setGameState("playing");
   };
 
@@ -163,11 +169,11 @@ export default function Shooter() {
           style={{ left: playerX, top: gameHeight - 30 }}
         />
 
-        {bulletsRef.current.map((b, i) => (
+        {bullets.map((b, i) => (
           <div key={i} className="bullet" style={{ left: b.x, top: b.y }} />
         ))}
 
-        {enemiesRef.current.map((e, i) => (
+        {enemies.map((e, i) => (
           <div key={i} className="enemy" style={{ left: e.x, top: e.y }} />
         ))}
 

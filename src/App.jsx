@@ -5,7 +5,6 @@ import Minesweeper from "./Minesweeper/Minesweeper";
 import Profile from "./Pages/Profile";
 import Pacman from "./pacman/pacman";
 import Login from "./Pages/Login";
-import FlappyBird from "./FlappyBird/FlappyBird";
 import Friends from "./Pages/Friends";
 import Snake from "./Snake/Snake";
 import TicTacToe from "./TicTacToe/tictactoe";
@@ -50,7 +49,6 @@ function App() {
       <Route path="/minesweeper" element={<Minesweeper />} />
       <Route path="/pacman" element={<Pacman />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/flappybird" element={<FlappyBird />} />
       <Route path="/snake" element={<Snake />} />
       <Route path="/friends" element={<Friends />} />
       <Route path="/brick-breaker" element={<BrickBreaker />} />

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext();
@@ -8,9 +8,23 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
+  async function ensureUserProfile(user) {
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", user.id)
+      .single();
 
+    if (!data) {
+      await supabase.from("users").insert({
+        id: user.id,
+        username: user.email.split("@")[0], // temp username
+        xp: 0,
+      });
+    }
+  }
+
+  useEffect(() => {
     const loadSession = async () => {
       const { data, error } = await supabase.auth.getUser();
 
@@ -25,29 +39,9 @@ export function AuthProvider({ children }) {
     };
 
     loadSession();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   //USER LOGIN
-  const ensureUserProfile = async (user) => {
-    const { data } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (!data) {
-      await supabase.from("users").insert({
-        id: user.id,
-        username: user.email.split("@")[0], // temp username
-        xp: 0,
-      });
-    }
-  };
-
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -277,25 +271,22 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const value = useMemo(
-    () => ({
-      user,
-      authLoading,
-      login,
-      signup,
-      logout,
-      loginWithGoogle,
-      addFriend,
-      removeFriend,
-      fetchFriends,
-      fetchUsers,
-      fetchUserProfile,
-      reportScore,
-      fetchLeaderboard,
-      fetchUserScores,
-    }),
-    [user, authLoading],
-  );
+  const value = {
+    user,
+    authLoading,
+    login,
+    signup,
+    logout,
+    loginWithGoogle,
+    addFriend,
+    removeFriend,
+    fetchFriends,
+    fetchUsers,
+    fetchUserProfile,
+    reportScore,
+    fetchLeaderboard,
+    fetchUserScores,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

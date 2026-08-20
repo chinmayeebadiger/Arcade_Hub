@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import Navbar from "../Components/Navbar";
 import "./Friends.css";
 

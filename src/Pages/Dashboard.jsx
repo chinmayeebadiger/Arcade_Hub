@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import ArcadeMachine from "../Components/ArcadeMachine";
 import { useState } from "react";
@@ -22,12 +22,6 @@ export default function Dashboard() {
       path: "/pacman",
       image: "/images/pacman.png",
       description: "Arcade • Navigation • Reflex",
-    },
-    {
-      title: "Flappy Bird",
-      path: "/flappybird",
-      image: "/images/flappybird.png",
-      description: "Reflex • Timing • Casual",
     },
     {
       title: "Snake",
@@ -64,24 +58,6 @@ export default function Dashboard() {
       path: "/shooter",
       thumb: "SH",
       description: "Accuracy • Shooting • Speed",
-    },
-    {
-      title: "Scream Runner",
-      path: "/screamrunner",
-      thumb: "SR",
-      description: "Voice • Timing • Fun",
-    },
-    {
-      title: "Fruit Ninja",
-      path: "/fruitninja",
-      thumb: "FN",
-      description: "Splash • Quick • Timing",
-    },
-    {
-      title: "Puzzle",
-      path: "/puzzle",
-      thumb: "PZ",
-      description: "Puzzle • Timing • Fun",
     },
   ];
 
