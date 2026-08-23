@@ -100,3 +100,19 @@ Final checks:
 - `npm run build`: pass.
 - Dev route probe: pass.
 - Documentation updated.
+
+## Additional Worker Expansion
+
+Status: Self-approved
+
+- Added `src/workers/pacmanWorker.js` for Pac-Man ghost movement.
+- Added `src/workers/tetrisWorker.js` for Tetris movement, rotation, drop, lock, and line-clear commands.
+- Added `src/workers/shooterWorker.js` for Shooter per-frame movement, spawning, and collision calculations.
+- Wired Pac-Man, Tetris, and Shooter to use their workers with local fallback paths.
+- Updated README and project context to reflect the expanded worker coverage.
+
+Review:
+
+- `npm run lint`: pass.
+- `npm run build`: pass.
+- Build output includes `tictactoeWorker`, `pacmanWorker`, `tetrisWorker`, and `shooterWorker` assets.

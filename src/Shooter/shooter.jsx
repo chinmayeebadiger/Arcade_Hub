@@ -19,6 +19,9 @@ export default function Shooter() {
   const lastShotRef = useRef(0);
   const bulletsRef = useRef([]);
   const enemiesRef = useRef([]);
+  const workerRef = useRef(null);
+  const requestIdRef = useRef(0);
+  const workerBusyRef = useRef(false);
 
   const { user, reportScore } = useAuth();
 
@@ -26,6 +29,58 @@ export default function Shooter() {
     const timer = setTimeout(() => setBooting(false), 650);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const worker = new Worker(
+      new URL("../workers/shooterWorker.js", import.meta.url),
+      { type: "module" },
+    );
+
+    workerRef.current = worker;
+
+    worker.onmessage = (event) => {
+      const { type, requestId, result, message } = event.data || {};
+      if (requestId !== requestIdRef.current) return;
+      workerBusyRef.current = false;
+
+      if (type === "SHOOTER_WORKER_ERROR") {
+        console.error(message);
+        return;
+      }
+
+      if (type !== "SHOOTER_TICK_RESULT") return;
+
+      playerXRef.current = result.playerX;
+      bulletsRef.current = result.bullets;
+      enemiesRef.current = result.enemies;
+      lastShotRef.current = result.lastShot;
+
+      setPlayerX(result.playerX);
+      setBullets(result.bullets);
+      setEnemies(result.enemies);
+
+      if (result.hitCount > 0 && user) {
+        reportScore("shooter", result.hitCount * 10).catch((error) => {
+          console.error(error);
+        });
+      }
+
+      if (result.gameOver) {
+        setGameState("gameover");
+      }
+    };
+
+    worker.onerror = (error) => {
+      workerBusyRef.current = false;
+      workerRef.current = null;
+      console.error("Shooter worker failed.", error);
+    };
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, [reportScore, user]);
 
   useEffect(() => {
     if (booting) return undefined;
@@ -57,8 +112,7 @@ export default function Shooter() {
   useEffect(() => {
     if (gameState !== "playing") return;
 
-    const interval = setInterval(() => {
-      // Move player
+    const runLocalTick = () => {
       setPlayerX((prev) => {
         let x = prev;
         if (keys.current.left) x -= 5;
@@ -68,7 +122,6 @@ export default function Shooter() {
         return clamped;
       });
 
-      // Shoot
       const now = Date.now();
       if (keys.current.shoot && now - lastShotRef.current > 250) {
         lastShotRef.current = now;
@@ -78,67 +131,103 @@ export default function Shooter() {
         });
       }
 
-      // Move bullets
       bulletsRef.current = bulletsRef.current
-        .map((b) => ({ ...b, y: b.y - 6 }))
-        .filter((b) => b.y > 0);
+        .map((bullet) => ({ ...bullet, y: bullet.y - 6 }))
+        .filter((bullet) => bullet.y > 0);
 
-      // Spawn enemies
       if (Math.random() < 0.02) {
         enemiesRef.current.push({ x: Math.random() * (gameWidth - 30), y: 0 });
       }
 
-      // Move enemies
-      enemiesRef.current = enemiesRef.current.map((e) => ({
-        ...e,
-        y: e.y + 1,
+      enemiesRef.current = enemiesRef.current.map((enemy) => ({
+        ...enemy,
+        y: enemy.y + 1,
       }));
 
-      // Collision detection
       const remainingEnemies = [];
-      for (let e of enemiesRef.current) {
+      let hitCount = 0;
+
+      for (let enemyIndex = 0; enemyIndex < enemiesRef.current.length; enemyIndex += 1) {
+        const enemy = enemiesRef.current[enemyIndex];
         let hit = false;
-        bulletsRef.current = bulletsRef.current.filter((b) => {
+        bulletsRef.current = bulletsRef.current.filter((bullet) => {
           if (
             !hit &&
-            b.x < e.x + 30 &&
-            b.x + 4 > e.x &&
-            b.y < e.y + 30 &&
-            b.y + 10 > e.y
+            bullet.x < enemy.x + 30 &&
+            bullet.x + 4 > enemy.x &&
+            bullet.y < enemy.y + 30 &&
+            bullet.y + 10 > enemy.y
           ) {
             hit = true;
             return false;
           }
           return true;
         });
-        if (!hit) remainingEnemies.push(e);
 
         if (hit) {
-          if (user) {
-            reportScore("shooter", 10).catch((error) => {
-              console.error(error);
-            });
-          }
+          hitCount += 1;
+        } else {
+          remainingEnemies.push(enemy);
         }
       }
+
       enemiesRef.current = remainingEnemies;
 
-      // Game over
-      if (enemiesRef.current.some((e) => e.y > gameHeight - 40)) {
-        setBullets([...bulletsRef.current]);
-        setEnemies([...enemiesRef.current]);
+      if (hitCount > 0 && user) {
+        reportScore("shooter", hitCount * 10).catch((error) => {
+          console.error(error);
+        });
+      }
+
+      if (enemiesRef.current.some((enemy) => enemy.y > gameHeight - 40)) {
         setGameState("gameover");
-        return;
       }
 
       setBullets([...bulletsRef.current]);
       setEnemies([...enemiesRef.current]);
+    };
+
+    const interval = setInterval(() => {
+      if (!workerRef.current) {
+        runLocalTick();
+        return;
+      }
+
+      if (workerBusyRef.current) {
+        return;
+      }
+
+      workerBusyRef.current = true;
+      requestIdRef.current += 1;
+
+      try {
+        workerRef.current.postMessage({
+          type: "SHOOTER_TICK",
+          requestId: requestIdRef.current,
+          payload: {
+            playerX: playerXRef.current,
+            bullets: bulletsRef.current,
+            enemies: enemiesRef.current,
+            keys: keys.current,
+            now: Date.now(),
+            lastShot: lastShotRef.current,
+            spawnRoll: Math.random(),
+            spawnX: Math.random(),
+          },
+        });
+      } catch (error) {
+        workerBusyRef.current = false;
+        console.error("Unable to send Shooter state to worker.", error);
+        runLocalTick();
+      }
     }, 16);
 
     return () => clearInterval(interval);
-  }, [gameState, reportScore, user]);
+  }, [gameHeight, gameState, gameWidth, reportScore, user]);
 
   const startGame = () => {
+    requestIdRef.current += 1;
+    workerBusyRef.current = false;
     setPlayerX(280);
     playerXRef.current = 280;
     bulletsRef.current = [];

@@ -97,13 +97,13 @@ Because sessions are in memory, all sessions disappear when the server restarts.
 Games are implemented as separate folders under `src/`.
 
 - Minesweeper: React grid game, reports Supabase score via `reportScore("minesweeper", points)`.
-- Pac-Man: React grid game with pellets and simple ghost movement, reports Supabase score via `reportScore("pacman", points)`.
+- Pac-Man: React grid game with pellets and Web Worker ghost movement, reports Supabase score via `reportScore("pacman", points)`.
 - Snake: React implementation with local high score in `localStorage`; no Supabase score reporting.
 - Brick Breaker: Canvas game with levels, lives, and score; no shared score reporting currently visible.
 - Pong: Canvas player-vs-AI game; no shared score reporting currently visible.
-- Tetris: React board implementation; no shared score reporting currently visible.
+- Tetris: React board implementation with Web Worker command calculations; no shared score reporting currently visible.
 - Tic-Tac-Toe: React game with AI minimax in a Web Worker and local match score; no shared score reporting currently visible.
-- Shooter: Simple DOM/ref-based shooter; no shared score reporting currently visible.
+- Shooter: Simple DOM/ref-based shooter with Web Worker tick/collision calculations; reports score via `reportScore("shooter", points)`.
 
 Most games show `Navbar` and a short `GameBoot` loading screen before gameplay.
 
@@ -147,7 +147,8 @@ Audio files:
 - Login UI now labels the Supabase auth field as email.
 - `Profile.jsx` now derives the current username from the auth email and uses safe fallbacks while profile data loads.
 - Duplicate uppercase Tic-Tac-Toe component/style files were removed from Git tracking; the app uses lowercase `tictactoe.jsx`/`tictactoe.css`.
-- `npm run lint` and `npm run build` pass with zero warnings.
+- Web Worker implementations are active for Tic-Tac-Toe, Pac-Man, Tetris, and Shooter.
+- `npm run lint` and `npm run build` pass with zero warnings as of the last implementation pass.
 
 ## Suggested Next Steps
 

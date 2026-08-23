@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../Components/Navbar";
 import GameBoot from "../Components/GameBoot";
 import "../Components/GameBoot.css";
@@ -189,13 +189,142 @@ function renderBoard(board, piece) {
   return rendered;
 }
 
+function applyTetrisCommand(game, command) {
+  if (game.status !== "playing") return game;
+
+  if (command === "TICK" || command === "MOVE_DOWN") {
+    if (canPlace(game.board, game.piece, game.piece.row + 1, game.piece.col)) {
+      return {
+        ...game,
+        score: command === "MOVE_DOWN" ? game.score + 1 : game.score,
+        piece: { ...game.piece, row: game.piece.row + 1 },
+      };
+    }
+
+    return lockPiece(game);
+  }
+
+  if (command === "MOVE_LEFT" || command === "MOVE_RIGHT") {
+    const offset = command === "MOVE_LEFT" ? -1 : 1;
+    if (canPlace(game.board, game.piece, game.piece.row, game.piece.col + offset)) {
+      return {
+        ...game,
+        piece: { ...game.piece, col: game.piece.col + offset },
+      };
+    }
+    return game;
+  }
+
+  if (command === "ROTATE") {
+    const rotated = rotateClockwise(game.piece.shape);
+    const kicks = [0, -1, 1, -2, 2];
+
+    for (let index = 0; index < kicks.length; index += 1) {
+      const offset = kicks[index];
+      if (canPlace(game.board, game.piece, game.piece.row, game.piece.col + offset, rotated)) {
+        return {
+          ...game,
+          piece: {
+            ...game.piece,
+            shape: rotated,
+            col: game.piece.col + offset,
+          },
+        };
+      }
+    }
+
+    return game;
+  }
+
+  if (command === "HARD_DROP") {
+    let dropped = game;
+    while (canPlace(dropped.board, dropped.piece, dropped.piece.row + 1, dropped.piece.col)) {
+      dropped = {
+        ...dropped,
+        score: dropped.score + 2,
+        piece: { ...dropped.piece, row: dropped.piece.row + 1 },
+      };
+    }
+    return lockPiece(dropped);
+  }
+
+  return game;
+}
+
 export default function Tetris() {
   const [booting, setBooting] = useState(true);
   const [game, setGame] = useState(createInitialGame);
+  const gameRef = useRef(game);
+  const workerRef = useRef(null);
+  const requestIdRef = useRef(0);
+  const commandRef = useRef("TICK");
 
   useEffect(() => {
     const timer = setTimeout(() => setBooting(false), 650);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
+
+  const applyCommand = useCallback((command) => {
+    commandRef.current = command;
+
+    if (!workerRef.current) {
+      setGame((previous) => applyTetrisCommand(previous, command));
+      return;
+    }
+
+    requestIdRef.current += 1;
+
+    try {
+      workerRef.current.postMessage({
+        type: "APPLY_TETRIS_COMMAND",
+        requestId: requestIdRef.current,
+        command,
+        game: gameRef.current,
+      });
+    } catch (error) {
+      console.error("Unable to send Tetris command to worker.", error);
+      setGame((previous) => applyTetrisCommand(previous, command));
+    }
+  }, []);
+
+  useEffect(() => {
+    const worker = new Worker(
+      new URL("../workers/tetrisWorker.js", import.meta.url),
+      { type: "module" },
+    );
+
+    workerRef.current = worker;
+
+    worker.onmessage = (event) => {
+      const { type, requestId, game: nextGame, message } = event.data || {};
+      if (requestId !== requestIdRef.current) return;
+
+      if (type === "TETRIS_WORKER_ERROR") {
+        console.error(message);
+        workerRef.current = null;
+        setGame((previous) => applyTetrisCommand(previous, commandRef.current));
+        return;
+      }
+
+      if (type === "TETRIS_COMMAND_RESULT") {
+        setGame(nextGame);
+      }
+    };
+
+    worker.onerror = (error) => {
+      workerRef.current = null;
+      console.error("Tetris worker failed.", error);
+      setGame((previous) => applyTetrisCommand(previous, commandRef.current));
+    };
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -204,151 +333,39 @@ export default function Tetris() {
     const speed = Math.max(90, 720 - (game.level - 1) * 55);
 
     const interval = setInterval(() => {
-      setGame((previous) => {
-        if (previous.status !== "playing") return previous;
-
-        if (
-          canPlace(
-            previous.board,
-            previous.piece,
-            previous.piece.row + 1,
-            previous.piece.col,
-          )
-        ) {
-          return {
-            ...previous,
-            piece: { ...previous.piece, row: previous.piece.row + 1 },
-          };
-        }
-
-        return lockPiece(previous);
-      });
+      applyCommand("TICK");
     }, speed);
 
     return () => clearInterval(interval);
-  }, [booting, game.level, game.status]);
+  }, [applyCommand, booting, game.level, game.status]);
 
   useEffect(() => {
     if (booting) return undefined;
 
     const onKeyDown = (event) => {
-      setGame((previous) => {
-        if (previous.status !== "playing") return previous;
+      if (gameRef.current.status !== "playing") return;
 
-        const key = event.key;
-
-        if (key === "ArrowLeft") {
-          if (
-            canPlace(
-              previous.board,
-              previous.piece,
-              previous.piece.row,
-              previous.piece.col - 1,
-            )
-          ) {
-            return {
-              ...previous,
-              piece: { ...previous.piece, col: previous.piece.col - 1 },
-            };
-          }
-          return previous;
-        }
-
-        if (key === "ArrowRight") {
-          if (
-            canPlace(
-              previous.board,
-              previous.piece,
-              previous.piece.row,
-              previous.piece.col + 1,
-            )
-          ) {
-            return {
-              ...previous,
-              piece: { ...previous.piece, col: previous.piece.col + 1 },
-            };
-          }
-          return previous;
-        }
-
-        if (key === "ArrowDown") {
-          if (
-            canPlace(
-              previous.board,
-              previous.piece,
-              previous.piece.row + 1,
-              previous.piece.col,
-            )
-          ) {
-            return {
-              ...previous,
-              score: previous.score + 1,
-              piece: { ...previous.piece, row: previous.piece.row + 1 },
-            };
-          }
-
-          return lockPiece(previous);
-        }
-
-        if (key === "ArrowUp") {
-          const rotated = rotateClockwise(previous.piece.shape);
-          const kicks = [0, -1, 1, -2, 2];
-
-          for (let index = 0; index < kicks.length; index += 1) {
-            const offset = kicks[index];
-            if (
-              canPlace(
-                previous.board,
-                previous.piece,
-                previous.piece.row,
-                previous.piece.col + offset,
-                rotated,
-              )
-            ) {
-              return {
-                ...previous,
-                piece: {
-                  ...previous.piece,
-                  shape: rotated,
-                  col: previous.piece.col + offset,
-                },
-              };
-            }
-          }
-
-          return previous;
-        }
-
-        if (key === " ") {
-          let dropped = previous;
-          while (
-            canPlace(
-              dropped.board,
-              dropped.piece,
-              dropped.piece.row + 1,
-              dropped.piece.col,
-            )
-          ) {
-            dropped = {
-              ...dropped,
-              score: dropped.score + 2,
-              piece: { ...dropped.piece, row: dropped.piece.row + 1 },
-            };
-          }
-          return lockPiece(dropped);
-        }
-
-        return previous;
-      });
+      if (event.key === "ArrowLeft") {
+        applyCommand("MOVE_LEFT");
+      } else if (event.key === "ArrowRight") {
+        applyCommand("MOVE_RIGHT");
+      } else if (event.key === "ArrowDown") {
+        applyCommand("MOVE_DOWN");
+      } else if (event.key === "ArrowUp") {
+        applyCommand("ROTATE");
+      } else if (event.key === " ") {
+        applyCommand("HARD_DROP");
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [booting]);
+  }, [applyCommand, booting]);
 
   const displayBoard = useMemo(() => renderBoard(game.board, game.piece), [game.board, game.piece]);
 
   const restart = () => {
+    requestIdRef.current += 1;
     setGame(createInitialGame());
   };
 

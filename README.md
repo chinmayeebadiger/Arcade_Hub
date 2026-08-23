@@ -34,14 +34,20 @@ manage their own friendships, and insert/update their own scores.
 
 ## Multithreading
 
-Tic-Tac-Toe uses a Web Worker for the AI move calculation:
+Several games use Web Workers to move calculation-heavy game logic off the main
+browser thread:
 
-- Pure minimax logic lives in `src/TicTacToe/tictactoeAi.js`.
-- The worker lives in `src/workers/tictactoeWorker.js`.
-- `src/TicTacToe/tictactoe.jsx` sends board snapshots to the worker and applies
-  the returned AI move.
-- If the worker fails, the game logs the problem and falls back to the same AI
-  function on the main thread.
+- Tic-Tac-Toe uses `src/workers/tictactoeWorker.js` for AI minimax move
+  selection.
+- Pac-Man uses `src/workers/pacmanWorker.js` for ghost movement calculation.
+- Tetris uses `src/workers/tetrisWorker.js` for movement, rotation, drop, lock,
+  and line-clear commands.
+- Shooter uses `src/workers/shooterWorker.js` for per-frame movement, spawning,
+  and collision calculations.
+
+Each game keeps React responsible for rendering and state updates. If worker
+messaging fails, the game logs the problem and falls back to local logic where
+needed.
 
 ## Legacy Backend
 

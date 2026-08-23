@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./pacman.css";
 import Navbar from "../Components/Navbar";
 import { useAuth } from "../context/AuthContext";
@@ -79,6 +79,8 @@ export default function Pacman() {
   const [gameState, setGameState] = useState("playing");
   const [highScore, setHighScore] = useState(0);
   const [booting, setBooting] = useState(true);
+  const workerRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setBooting(false), 650);
@@ -102,6 +104,45 @@ export default function Pacman() {
     setLives((prev) => prev - 1);
     resetPositions();
   }, [gameState, lives, resetPositions]);
+
+  useEffect(() => {
+    const worker = new Worker(
+      new URL("../workers/pacmanWorker.js", import.meta.url),
+      { type: "module" },
+    );
+
+    workerRef.current = worker;
+
+    worker.onmessage = (event) => {
+      const { type, requestId, ghosts: movedGhosts, collided, message } = event.data || {};
+      if (requestId !== requestIdRef.current) return;
+
+      if (type === "PACMAN_WORKER_ERROR") {
+        console.error(message);
+        workerRef.current = null;
+        return;
+      }
+
+      if (type !== "GHOSTS_MOVED") return;
+
+      if (collided) {
+        handleCollision();
+        return;
+      }
+
+      setGhosts(movedGhosts);
+    };
+
+    worker.onerror = (error) => {
+      workerRef.current = null;
+      console.error("Pac-Man worker failed.", error);
+    };
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, [handleCollision]);
 
   // Keyboard controls
   useEffect(() => {
@@ -185,22 +226,45 @@ export default function Pacman() {
     if (booting || gameState !== "playing") return;
 
     const timer = setTimeout(() => {
-      const movedGhosts = ghosts.map((ghost) =>
-        getNextGhostState(ghost, player, grid),
-      );
+      const fallbackMoveGhosts = () => {
+        const movedGhosts = ghosts.map((ghost) =>
+          getNextGhostState(ghost, player, grid),
+        );
 
-      if (movedGhosts.some((ghost) => isSameCell(ghost, player))) {
-        handleCollision();
+        if (movedGhosts.some((ghost) => isSameCell(ghost, player))) {
+          handleCollision();
+          return;
+        }
+
+        setGhosts(movedGhosts);
+      };
+
+      if (!workerRef.current) {
+        fallbackMoveGhosts();
         return;
       }
 
-      setGhosts(movedGhosts);
+      requestIdRef.current += 1;
+
+      try {
+        workerRef.current.postMessage({
+          type: "MOVE_GHOSTS",
+          requestId: requestIdRef.current,
+          ghosts,
+          player,
+          grid,
+        });
+      } catch (error) {
+        console.error("Unable to send Pac-Man state to worker.", error);
+        fallbackMoveGhosts();
+      }
     }, 300);
 
     return () => clearTimeout(timer);
   }, [booting, ghosts, player, grid, gameState, handleCollision]);
 
   const resetGame = () => {
+    requestIdRef.current += 1;
     setPlayer(createInitialPlayer());
     setGhosts(createInitialGhosts());
     setLives(3);
