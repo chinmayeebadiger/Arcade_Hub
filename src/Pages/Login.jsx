@@ -12,7 +12,7 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
-  const { login, signup, loginWithGoogle } = useAuth();
+  const { login, signup } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,10 +68,6 @@ export default function Login() {
 
             <button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Please wait..." : isSignup ? "Sign Up" : "Login"}
-            </button>
-
-            <button type="button" onClick={loginWithGoogle}>
-              Continue with Google
             </button>
           </form>
 

@@ -75,14 +75,6 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const loginWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
-
-    if (error) return new Error(error.message);
-  };
-
   //FRIENDS
 
   const fetchUsers = async (search = "") => {
@@ -277,7 +269,6 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
-    loginWithGoogle,
     addFriend,
     removeFriend,
     fetchFriends,

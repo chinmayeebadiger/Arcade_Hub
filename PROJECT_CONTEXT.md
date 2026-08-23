@@ -62,7 +62,6 @@ Current frontend auth lives in `src/context/AuthContext.jsx` and uses Supabase:
 
 - `login(email, password)` calls `supabase.auth.signInWithPassword`
 - `signup(email, password)` calls `supabase.auth.signUp`
-- `loginWithGoogle()` calls Supabase OAuth
 - User profiles are stored/read from a Supabase `users` table
 - Friend relationships are stored/read from a Supabase `friends` table
 - Scores are stored/read from a Supabase `scores` table
@@ -120,7 +119,7 @@ Important shared components:
 Important pages:
 
 - `Dashboard.jsx`: game grid and login/profile/friends actions
-- `Login.jsx`: login/signup form plus Google auth
+- `Login.jsx`: email/password login and signup form
 - `Profile.jsx`: own profile, scores, leaderboard, friend profile view
 - `Friends.jsx`: search users, add/remove friends, view friend profiles
 
