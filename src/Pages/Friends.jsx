@@ -32,7 +32,7 @@ export default function Friends() {
     };
 
     loadFriends();
-  }, [user]);
+  }, [user, fetchFriends]);
 
   useEffect(() => {
     if (!user) return;

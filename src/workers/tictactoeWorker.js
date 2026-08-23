@@ -9,11 +9,12 @@ function isValidBoard(board) {
 }
 
 self.onmessage = (event) => {
-  const { type, board } = event.data || {};
+  const { type, board, requestId } = event.data || {};
 
   if (type !== "GET_AI_MOVE") {
     self.postMessage({
       type: "AI_MOVE_ERROR",
+      requestId,
       message: `Unknown Tic-Tac-Toe worker message: ${type}`,
     });
     return;
@@ -22,6 +23,7 @@ self.onmessage = (event) => {
   if (!isValidBoard(board)) {
     self.postMessage({
       type: "AI_MOVE_ERROR",
+      requestId,
       message: "Worker received an invalid Tic-Tac-Toe board.",
     });
     return;
@@ -31,6 +33,7 @@ self.onmessage = (event) => {
 
   self.postMessage({
     type: "AI_MOVE_RESULT",
+    requestId,
     move,
   });
 };

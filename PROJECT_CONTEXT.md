@@ -1,6 +1,6 @@
 # Arcade Hub Project Context
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-23
 
 ## What This Project Is
 
@@ -68,9 +68,10 @@ Current frontend auth lives in `src/context/AuthContext.jsx` and uses Supabase:
 - Scores are stored/read from a Supabase `scores` table
 - XP is updated on the Supabase `users` table
 
-The UI labels the login field as "Username", but the Supabase call treats it as an email. Several places derive display names with `user.email.split("@")[0]`.
+The login form labels the Supabase auth field as email. Several places derive display names with `user.email.split("@")[0]`.
 
-The README says auth uses the local backend and no `localStorage`, but the active code does not match that README.
+The README now documents Supabase as the active auth/data path and describes
+the local Node backend as legacy/reference code.
 
 ## Local Backend
 
@@ -102,7 +103,7 @@ Games are implemented as separate folders under `src/`.
 - Brick Breaker: Canvas game with levels, lives, and score; no shared score reporting currently visible.
 - Pong: Canvas player-vs-AI game; no shared score reporting currently visible.
 - Tetris: React board implementation; no shared score reporting currently visible.
-- Tic-Tac-Toe: React game with AI minimax and local match score; no shared score reporting currently visible.
+- Tic-Tac-Toe: React game with AI minimax in a Web Worker and local match score; no shared score reporting currently visible.
 - Shooter: Simple DOM/ref-based shooter; no shared score reporting currently visible.
 
 Most games show `Navbar` and a short `GameBoot` loading screen before gameplay.
@@ -142,19 +143,15 @@ Audio files:
 
 ## Known Issues And Drift
 
-- Auth/data architecture is split: README/local backend says one thing, React code uses Supabase.
+- Auth/data architecture still has two implementations in the repository, but README now identifies Supabase as the active frontend path and the Node backend as legacy/reference code.
 - Auth import casing has been normalized to `context/AuthContext`.
-- Login UI says username, but Supabase auth expects email/password.
-- `Profile.jsx` compares `username === user?.username`, but Supabase auth user objects usually do not have a top-level `username`.
-- `Profile.jsx` uses `displayedUser.xp` without optional chaining, so a partially loaded profile can crash if `displayedUser` lacks `xp`.
-- README lists only some backend endpoints and is stale compared with the current server.
-- `npm install`, `npm run lint`, and `npm run build` have been run. Lint passes with hook dependency warnings only.
+- Login UI now labels the Supabase auth field as email.
+- `Profile.jsx` now derives the current username from the auth email and uses safe fallbacks while profile data loads.
+- Duplicate uppercase Tic-Tac-Toe component/style files were removed from Git tracking; the app uses lowercase `tictactoe.jsx`/`tictactoe.css`.
+- `npm run lint` and `npm run build` pass with zero warnings.
 
 ## Suggested Next Steps
 
-1. Choose the source of truth for auth/data: Supabase or the local Node backend.
-2. Update README and code to match that decision.
-3. Fix the login form wording or change auth to actual username login.
-4. Make score reporting consistent across games.
-5. Decide whether the local Node backend should be removed if Supabase remains the source of truth.
-6. Address the remaining React hook dependency lint warnings.
+1. Make score reporting consistent across games.
+2. Decide whether the local Node backend should be removed if Supabase remains the source of truth.
+3. Add production Supabase setup details if deploying the app.

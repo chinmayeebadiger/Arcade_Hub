@@ -162,8 +162,8 @@ export default function Pacman() {
         setScore(nextScore);
 
         if (user) {
-          reportScore("pacman", points).catch(() => {
-            console.error;
+          reportScore("pacman", points).catch((error) => {
+            console.error(error);
           });
         }
 
@@ -178,7 +178,7 @@ export default function Pacman() {
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [booting, player, ghosts, grid, gameState, user, handleCollision]);
+  }, [booting, player, ghosts, grid, gameState, score, user, reportScore, handleCollision]);
 
   // Ghost movement loop
   useEffect(() => {

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "../Components/Navbar";
 import GameBoot from "../Components/GameBoot";
 import "../Components/GameBoot.css";
-import "./TicTacToe.css";
+import "./tictactoe.css";
 import { getBestAiMove, getWinner } from "./tictactoeAi";
 
 function createInitialState() {
@@ -66,10 +66,66 @@ function applyMove(game, index) {
 export default function TicTacToe() {
   const [booting, setBooting] = useState(true);
   const [game, setGame] = useState(createInitialState);
+  const workerRef = useRef(null);
+  const requestIdRef = useRef(0);
+  const latestBoardRef = useRef("[]");
 
   useEffect(() => {
     const timer = setTimeout(() => setBooting(false), 650);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const worker = new Worker(
+      new URL("../workers/tictactoeWorker.js", import.meta.url),
+      { type: "module" },
+    );
+
+    workerRef.current = worker;
+
+    worker.onmessage = (event) => {
+      const { type, move, requestId, message } = event.data || {};
+
+      if (requestId !== requestIdRef.current) return;
+
+      if (type === "AI_MOVE_ERROR") {
+        console.error(message);
+        setGame((previous) => applyMove(previous, getBestAiMove(previous.board, "O", "X")));
+        return;
+      }
+
+      if (type !== "AI_MOVE_RESULT") return;
+
+      setGame((previous) => {
+        if (
+          previous.mode !== "ai" ||
+          previous.turn !== "O" ||
+          previous.winner ||
+          previous.draw ||
+          JSON.stringify(previous.board) !== latestBoardRef.current
+        ) {
+          return previous;
+        }
+
+        return applyMove(previous, move);
+      });
+    };
+
+    worker.onerror = (error) => {
+      console.error("Tic-Tac-Toe worker failed.", error);
+      setGame((previous) => {
+        if (previous.mode !== "ai" || previous.turn !== "O" || previous.winner || previous.draw) {
+          return previous;
+        }
+
+        return applyMove(previous, getBestAiMove(previous.board, "O", "X"));
+      });
+    };
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -78,22 +134,26 @@ export default function TicTacToe() {
       return undefined;
     }
 
-    const snapshot = game.board.join("");
+    const snapshot = JSON.stringify(game.board);
     const timer = setTimeout(() => {
-      setGame((previous) => {
-        if (
-          previous.mode !== "ai" ||
-          previous.turn !== "O" ||
-          previous.winner ||
-          previous.draw ||
-          previous.board.join("") !== snapshot
-        ) {
-          return previous;
+      latestBoardRef.current = snapshot;
+      requestIdRef.current += 1;
+
+      try {
+        if (!workerRef.current) {
+          setGame((previous) => applyMove(previous, getBestAiMove(previous.board, "O", "X")));
+          return;
         }
 
-        const bestMove = getBestAiMove(previous.board, "O", "X");
-        return applyMove(previous, bestMove);
-      });
+        workerRef.current.postMessage({
+          type: "GET_AI_MOVE",
+          requestId: requestIdRef.current,
+          board: game.board,
+        });
+      } catch (error) {
+        console.error("Unable to send Tic-Tac-Toe board to worker.", error);
+        setGame((previous) => applyMove(previous, getBestAiMove(previous.board, "O", "X")));
+      }
     }, 320);
 
     return () => clearTimeout(timer);

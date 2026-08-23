@@ -25,7 +25,8 @@ export default function Profile() {
   const [profileError, setProfileError] = useState("");
   const [scores, setScores] = useState([]);
 
-  const isOwnProfile = !username || username === user?.username;
+  const currentUsername = user?.email?.split("@")[0];
+  const isOwnProfile = !username || username === currentUsername;
 
   const handleLogout = async () => {
     await logout();
@@ -49,7 +50,7 @@ export default function Profile() {
     if (isOwnProfile) {
       fetchUsers();
     }
-  }, [user, isOwnProfile]);
+  }, [user, isOwnProfile, fetchLeaderboard]);
 
   useEffect(() => {
     if (!user) return;
@@ -60,7 +61,7 @@ export default function Profile() {
         setProfileError("");
 
         const targetUsername = isOwnProfile
-          ? user.email.split("@")[0] // or better: store username in metadata
+          ? currentUsername
           : username;
 
         const profile = await fetchUserProfile(targetUsername);
@@ -76,7 +77,7 @@ export default function Profile() {
     }
 
     loadProfile();
-  }, [user, isOwnProfile, username, fetchUserProfile]);
+  }, [user, isOwnProfile, username, currentUsername, fetchUserProfile, fetchUserScores]);
 
   if (!authLoading && !user) return <Navigate to="/login" replace />;
   if (!user) return null;
@@ -95,8 +96,8 @@ export default function Profile() {
             <p className="profile-label">
               {isOwnProfile ? "Player" : "Friend"}
             </p>
-            <h1 className="profile-name">{displayedUser?.username}</h1>
-            <p className="profile-xp">{displayedUser.xp} XP</p>
+            <h1 className="profile-name">{displayedUser?.username ?? currentUsername}</h1>
+            <p className="profile-xp">{displayedUser?.xp ?? 0} XP</p>
           </div>
 
           {isOwnProfile ? (
@@ -160,7 +161,7 @@ export default function Profile() {
                         : index === 2
                           ? "rank-3"
                           : "";
-                  const isMe = u.username === user.username ? "is-me" : "";
+                  const isMe = u.username === currentUsername ? "is-me" : "";
                   const rankSymbol =
                     index < 3 ? RANK_SYMBOLS[index] : `${index + 1}.`;
 
