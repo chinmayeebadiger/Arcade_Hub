@@ -3,7 +3,7 @@ import Navbar from "../Components/Navbar";
 import GameBoot from "../Components/GameBoot";
 import "../Components/GameBoot.css";
 import "./BrickBreaker.css";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 const CANVAS_WIDTH = 820;
 const CANVAS_HEIGHT = 480;
@@ -267,8 +267,8 @@ export default function BrickBreaker() {
           if (brick.hp <= 0) {
             state.score += 10 * state.level;
             if (user) {
-              reportScore("brickbreaker", 10 * state.level).catch(() => {
-                console.error;
+              reportScore("brickbreaker", 10 * state.level).catch((error) => {
+                console.error(error);
               });
             }
             scored = true;
@@ -357,7 +357,7 @@ export default function BrickBreaker() {
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerleave", onPointerLeave);
     };
-  }, [booting]);
+  }, [booting, reportScore, user]);
 
   const restart = () => {
     stateRef.current = createGameState();

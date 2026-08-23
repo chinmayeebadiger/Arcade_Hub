@@ -4,7 +4,7 @@ import gameOverSoundFile from "../assets/gameover.mp3";
 import Navbar from "../Components/Navbar.jsx";
 import GameBoot from "../Components/GameBoot";
 import "../Components/GameBoot.css";
-import { useAuth } from "../Context/AuthContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const GRID_SIZE = 20;
 
@@ -76,8 +76,8 @@ export default function Snake() {
             if (soundOn) eatSound.play();
 
             if (user) {
-              reportScore("snake", 10).catch(() => {
-                console.error;
+              reportScore("snake", 10).catch((error) => {
+                console.error(error);
               });
             }
             setFood({
@@ -114,6 +114,8 @@ export default function Snake() {
     soundOn,
     eatSound,
     gameOverSound,
+    reportScore,
+    user,
   ]);
 
   // Controls

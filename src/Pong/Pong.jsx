@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import Navbar from "../Components/Navbar";
 import GameBoot from "../Components/GameBoot";
 import "../Components/GameBoot.css";
@@ -186,8 +186,8 @@ export default function Pong() {
           if (index === 0) {
             state.ball.x = paddle.x + paddle.w + state.ball.r + 1;
             if (user) {
-              reportScore("pong", 10).catch(() => {
-                console.error;
+              reportScore("pong", 10).catch((error) => {
+                console.error(error);
               });
             }
           } else {
@@ -205,8 +205,8 @@ export default function Pong() {
         if (state.ball.x > WIDTH + 20) {
           state.playerScore += 1;
           if (user) {
-            reportScore("pong", 50).catch(() => {
-              console.error;
+            reportScore("pong", 50).catch((error) => {
+              console.error(error);
             });
           }
           resetBall(state, false);
@@ -269,7 +269,7 @@ export default function Pong() {
       window.removeEventListener("keyup", onKeyUp);
       canvas.removeEventListener("pointermove", onPointerMove);
     };
-  }, [booting]);
+  }, [booting, reportScore, user]);
 
   const restart = () => {
     stateRef.current = createState();

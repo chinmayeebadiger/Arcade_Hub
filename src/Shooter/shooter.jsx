@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./shooter.css";
 import Navbar from "../Components/Navbar";
 import GameBoot from "../Components/GameBoot";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function Shooter() {
   const gameWidth = 600;
@@ -115,8 +115,8 @@ export default function Shooter() {
 
         if (hit) {
           if (user) {
-            reportScore("shooter", 10).catch(() => {
-              console.error;
+            reportScore("shooter", 10).catch((error) => {
+              console.error(error);
             });
           }
         }
@@ -136,7 +136,7 @@ export default function Shooter() {
     }, 16);
 
     return () => clearInterval(interval);
-  }, [gameState]);
+  }, [gameState, reportScore, user]);
 
   const startGame = () => {
     setPlayerX(280);
