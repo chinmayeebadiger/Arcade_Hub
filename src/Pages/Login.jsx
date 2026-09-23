@@ -51,8 +51,8 @@ export default function Login() {
 
           <form onSubmit={handleSubmit}>
             <input
-              type="email"
-              placeholder="Email"
+              type="text"
+              placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />

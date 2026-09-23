@@ -25,7 +25,7 @@ export default function Profile() {
   const [profileError, setProfileError] = useState("");
   const [scores, setScores] = useState([]);
 
-  const currentUsername = user?.email?.split("@")[0];
+  const currentUsername = user?.username;
   const isOwnProfile = !username || username === currentUsername;
 
   const handleLogout = async () => {

@@ -14,20 +14,8 @@ import BrickBreaker from "./BrickBreaker/BrickBreaker";
 import Pong from "./Pong/Pong";
 import Tetris from "./Tetris/Tetris";
 
-import { supabase } from "./lib/supabase";
-
 function App() {
   const [showLoader, setShowLoader] = useState(true);
-
-  useEffect(() => {
-    const test = async () => {
-      const { data, error } = await supabase.auth.getSession();
-
-      console.log("Supabase Connection: ", { data, error });
-    };
-
-    test();
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -51,6 +51,7 @@ function verifyPassword(password, stored) {
 
 function sanitizeUser(user) {
   return {
+    id: user.id,
     username: user.username,
     friends: user.friends || [],
     xp: Number(user.xp) || 0,

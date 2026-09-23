@@ -4,33 +4,31 @@ Arcade Hub is a React + Vite mini-game collection.
 
 ## Development
 
-The active frontend uses Supabase for authentication, profiles, friends,
-scores, and leaderboard data. A lightweight local Node backend still exists in
-`server/`, but the React app currently talks to Supabase directly.
+The active app uses the local Node backend in `server/` for authentication,
+profiles, friends, scores, and leaderboard data. User data is stored in
+`server/data/users.json`.
 
-Create a `.env` file in the project root:
+Start the frontend and backend together:
 
-```env
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```bash
+npm run dev:full
 ```
 
-Then start the frontend:
+This starts:
+- Vite frontend on `http://localhost:5173`
+- Backend API on `http://localhost:4000`
+
+Run only the frontend:
 
 ```bash
 npm run dev
 ```
 
-### Supabase Tables
+Run only the backend:
 
-The app expects these public tables:
-
-- `users`: `id`, `username`, `xp`
-- `friends`: `id`, `user_id`, `friend_id`
-- `scores`: `id`, `user_id`, `game`, `score`
-
-Enable Row Level Security and allow authenticated users to read profiles,
-manage their own friendships, and insert/update their own scores.
+```bash
+npm run server
+```
 
 ## Multithreading
 
@@ -49,24 +47,7 @@ Each game keeps React responsible for rendering and state updates. If worker
 messaging fails, the game logs the problem and falls back to local logic where
 needed.
 
-## Legacy Backend
+## Local JSON Backend
 
-The project includes a lightweight Node backend for cookie-based sessions.
-It is useful as a reference or alternate local backend, but it is not the active
-auth/data path used by the current React app.
-
-### Run frontend + backend together
-
-```bash
-npm run dev:full
-```
-
-This starts:
-- Vite frontend on `http://localhost:5173`
-- Backend API on `http://localhost:4000`
-
-### Run only backend
-
-```bash
-npm run server
-```
+The backend uses cookie-based sessions and stores users in
+`server/data/users.json`. Passwords are hashed with PBKDF2 before being stored.
